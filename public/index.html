@@ -201,7 +201,11 @@
         const data = await resp.json();
 
         if (data.success) {
+          localStorage.setItem('username', data.user.username);
           showMsg(`登录成功，欢迎您：${data.user.name}！`, 'success');
+          setTimeout(() => {
+            window.location.href = '/main.html';
+          }, 800);
         } else {
           showMsg(data.message, 'error');
         }
