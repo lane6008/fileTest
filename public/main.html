@@ -10,9 +10,11 @@
     body {
       font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
       background: #f0f2f5;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden; /* 禁止全屏滚动 */
+      margin: 0;
     }
     
     /* 顶部标题栏 */
@@ -63,6 +65,7 @@
       flex-direction: column;
       gap: 20px;
       overflow: hidden;
+      height: calc(100vh - 56px); /* 减去header高度 */
     }
     
     /* 上传区域 */
@@ -71,6 +74,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       padding: 20px;
+      flex-shrink: 0;
     }
     
     .section-header {
@@ -319,6 +323,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0; /* 允许flex子项收缩 */
     }
     
     /* 列表头部行 - 标题和搜索框 */
@@ -357,6 +362,12 @@
       justify-content: center;
       font-size: 18px;
       flex-shrink: 0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .search-icon:hover {
+      background: #d0d7de;
     }
     
     .reset-btn {
@@ -472,6 +483,7 @@
       overflow: auto;
       border: 1px solid #e1e4e8;
       border-radius: 8px;
+      min-height: 0; /* 允许flex子项收缩 */
     }
     
     .file-table {
@@ -507,12 +519,12 @@
     /* 表格列宽 - 百分比相对值 */
     .file-table { table-layout: fixed; width: 100%; }
     .file-table .col-id { width: 6%; }
-    .file-table .col-name { width: 18%; }
+    .file-table .col-name { width: 16%; }
     .file-table .col-type2 { width: 7%; }
-    .file-table .col-desc2 { width: 20%; }
-    .file-table .col-uploader { width: 9%; }
-    .file-table .col-dept { width: 10%; }
-    .file-table .col-size { width: 9%; }
+    .file-table .col-desc2 { width: 18%; }
+    .file-table .col-uploader { width: 7%; }
+    .file-table .col-dept { width: 16%; }
+    .file-table .col-size { width: 7%; }
     .file-table .col-time { width: 11%; }
     .file-table .col-thumb { width: 8%; }
     .file-table .col-op { width: 12%; }
@@ -520,6 +532,12 @@
     .file-table .col-desc2 {
       white-space: normal;
       word-break: break-all;
+    }
+    
+    .file-table .col-dept {
+      white-space: normal;
+      word-break: break-all;
+      line-height: 1.5;
     }
     
     /* 缩略图 */
@@ -669,6 +687,13 @@
       min-width: 300px;
       text-align: center;
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     
     .modal-icon {
@@ -704,6 +729,66 @@
     
     .modal-btn:hover {
       opacity: 0.9;
+    }
+    
+    /* 编辑弹窗样式 */
+    .edit-modal {
+      min-width: 400px;
+      text-align: left;
+    }
+    
+    .edit-form {
+      margin: 16px 0;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #2d6a9f;
+    }
+    
+    .edit-btns {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .edit-btns .cancel-btn {
+      background: #f0f0f0;
+      color: #666;
+    }
+    
+    .edit-btns .cancel-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .edit-btns .confirm-btn {
+      background: #2d6a9f;
     }
     
     /* 空状态 */
@@ -780,7 +865,7 @@
         
         <!-- 搜索框区域 -->
         <div class="search-bar">
-          <div class="search-icon">🔍</div>
+          <div class="search-icon" onclick="executeSearch()" title="点击查询">🔍</div>
           <input type="text" class="search-input" id="searchKeyword" placeholder="文件名、描述......模糊搜索">
           <input type="text" class="search-input-small" id="searchUploader" placeholder="上传人">
           <input type="text" class="search-input-small" id="searchDept" placeholder="部门">
@@ -849,13 +934,48 @@
     </div>
   </div>
   
-  <!-- 弹窗 -->
+  <!-- 提示弹窗 -->
   <div class="modal-overlay" id="modal">
     <div class="modal">
       <div class="modal-icon" id="modalIcon">✓</div>
       <div class="modal-title" id="modalTitle">提示</div>
       <div class="modal-msg" id="modalMsg">...</div>
       <button class="modal-btn" id="modalBtn" onclick="closeModal()">确定</button>
+    </div>
+  </div>
+  
+  <!-- 编辑文件弹窗 -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal edit-modal">
+      <div class="modal-title">修改文件信息</div>
+      <div class="edit-form">
+        <div class="form-group">
+          <label>文件名</label>
+          <input type="text" id="editFilename" placeholder="请输入文件名">
+        </div>
+        <div class="form-group">
+          <label>文件类型</label>
+          <select id="editFileType">
+            <option value="Word">Word</option>
+            <option value="Excel">Excel</option>
+            <option value="PPT">PPT</option>
+            <option value="PDF">PDF</option>
+            <option value="图片">图片</option>
+            <option value="3D模型">3D模型</option>
+            <option value="视频">视频</option>
+            <option value="音频">音频</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>文件描述</label>
+          <textarea id="editDescription" rows="3" placeholder="请输入文件描述"></textarea>
+        </div>
+      </div>
+      <div class="edit-btns">
+        <button class="modal-btn cancel-btn" onclick="closeEditModal()">取消</button>
+        <button class="modal-btn confirm-btn" onclick="saveFileEdit()">确认</button>
+      </div>
     </div>
   </div>
 
@@ -1067,10 +1187,14 @@
         const data = await resp.json();
         
         if (data.success) {
-          showModal('success', '上传成功', `成功上传 ${data.files.length} 个文件到S3`);
+          // 显示成功提示，1.5秒后自动关闭
+          showModal('success', '上传成功', `成功上传 ${data.files.length} 个文件到S3`, true);
+          setTimeout(() => {
+            closeModal();
+          }, 1500);
           uploadFiles = [];
           renderUploadList();
-          loadFileList(); // 刷新文件列表
+          loadFileList(true); // 强制刷新文件列表
         } else {
           showModal('error', '上传失败', data.message || '上传失败');
         }
@@ -1097,13 +1221,54 @@
       });
     }
     
-    // 加载文件列表
-    async function loadFileList() {
+    // 加载文件列表（带缓存）
+    let fileListCache = null;
+    let lastQueryParams = '';
+    
+    async function loadFileList(forceRefresh = false) {
       try {
-        const resp = await fetch(`/api/files?type=${encodeURIComponent(currentType)}&page=${currentPage}&pageSize=${pageSize}`);
+        const username = localStorage.getItem('username');
+        
+        // 构建查询参数
+        const keyword = document.getElementById('searchKeyword').value;
+        const uploader = document.getElementById('searchUploader').value;
+        const dept = document.getElementById('searchDept').value;
+        const startDate = document.getElementById('searchStartDate').value;
+        const endDate = document.getElementById('searchEndDate').value;
+        
+        const queryParams = new URLSearchParams({
+          type: currentType,
+          page: currentPage,
+          pageSize: pageSize
+        });
+        
+        if (keyword) queryParams.append('keyword', keyword);
+        if (uploader) queryParams.append('uploader', uploader);
+        if (dept) queryParams.append('dept', dept);
+        if (startDate) queryParams.append('startDate', startDate);
+        if (endDate) queryParams.append('endDate', endDate);
+        
+        const queryString = queryParams.toString();
+        
+        // 检查缓存
+        if (!forceRefresh && fileListCache && lastQueryParams === queryString) {
+          renderFileTable(fileListCache.files);
+          totalFiles = fileListCache.total;
+          document.getElementById('totalCount').textContent = totalFiles;
+          renderPagination();
+          return;
+        }
+        
+        const resp = await fetch(`/api/files?${queryString}`, {
+          headers: { 'X-Username': username }
+        });
         const data = await resp.json();
         
         if (data.success) {
+          // 更新缓存
+          fileListCache = data;
+          lastQueryParams = queryString;
+          
           renderFileTable(data.files);
           totalFiles = data.total;
           document.getElementById('totalCount').textContent = totalFiles;
@@ -1114,10 +1279,37 @@
       }
     }
     
+    // 执行搜索
+    function executeSearch() {
+      currentPage = 1;
+      loadFileList(true);
+    }
+    
+    // 监听搜索框回车事件
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInputs = ['searchKeyword', 'searchUploader', 'searchDept'];
+      searchInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeSearch();
+          });
+        }
+      });
+      
+      const dateInputs = ['searchStartDate', 'searchEndDate'];
+      dateInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          input.addEventListener('change', executeSearch);
+        }
+      });
+    });
+    
     // 渲染文件表格
     function renderFileTable(files) {
       const tbody = document.getElementById('fileTableBody');
-      
+          
       if (files.length === 0) {
         tbody.innerHTML = `
           <tr>
@@ -1131,33 +1323,47 @@
         `;
         return;
       }
-      
+          
       tbody.innerHTML = files.map(file => `
         <tr>
           <td class="col-id">${file.id}</td>
-          <td class="col-name" title="${file.filename}">${file.filename}</td>
+          <td class="col-name" title="${escapeHtml(file.filename)}">${escapeHtml(file.filename)}</td>
           <td class="col-type2">${file.file_type}</td>
-          <td class="col-desc2" title="${file.description || ''}">${file.description || '-'}</td>
-          <td class="col-uploader">${file.uploader_name}</td>
-          <td class="col-dept">${file.dept_name}</td>
+          <td class="col-desc2" title="${escapeHtml(file.description || '')}">${escapeHtml(file.description) || '-'}</td>
+          <td class="col-uploader">${file.uploader_name || '-'}</td>
+          <td class="col-dept" title="${escapeHtml(file.dept_hierarchy || '')}">${escapeHtml(file.dept_hierarchy) || '-'}</td>
           <td class="col-size">${file.file_size_formatted}</td>
-          <td class="col-time">${formatDate(file.created_at)}</td>
+          <td class="col-time">${formatDate(file.updated_at || file.created_at)}</td>
           <td class="col-thumb">
             ${file.file_type === '图片' 
-              ? `<img src="${file.s3_url}" class="thumb-preview" onerror="this.parentElement.innerHTML='<div class=\\'thumb-placeholder\\'>无预览</div>'">`
+              ? `<img src="${file.s3_url}" class="thumb-preview" style="width:60px;height:60px;object-fit:contain;" onerror="this.parentElement.innerHTML='<div class=\'thumb-placeholder\'>无预览</div>'">`
               : '<div class="thumb-placeholder">无预览</div>'
             }
           </td>
           <td class="col-op">
             <div class="action-btns">
-              <button class="action-btn copy">复制URL</button>
-              <button class="action-btn download">下载</button>
-              <button class="action-btn edit">修改</button>
-              <button class="action-btn delete">删除</button>
+              <button class="action-btn copy" onclick="copyFileUrl('${escapeJs(file.s3_url)}')">复制url</button>
+              <button class="action-btn download" onclick="downloadFile('${escapeJs(file.s3_url)}')">下载</button>
+              <button class="action-btn edit" onclick="editFile(${file.id}, '${escapeJs(file.filename)}', '${escapeJs(file.description || '')}', '${escapeJs(file.file_type)}')">修改</button>
+              <button class="action-btn delete" onclick="deleteFile(${file.id})">删除</button>
             </div>
           </td>
         </tr>
       `).join('');
+    }
+        
+    // HTML转义
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+        
+    // JS字符串转义
+    function escapeJs(str) {
+      if (!str) return '';
+      return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
     }
     
     // 渲染分页
@@ -1204,9 +1410,92 @@
       window.open(url, '_blank');
     }
     
+    // 复制文件URL
+    async function copyFileUrl(url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        showModal('success', '复制成功', '文件URL已复制到剪贴板');
+      } catch (err) {
+        // 降级方案
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showModal('success', '复制成功', '文件URL已复制到剪贴板');
+      }
+    }
+    
+    // 下载文件
+    function downloadFile(url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    
+    // 当前编辑的文件ID
+    let currentEditFileId = null;
+    
+    // 编辑文件
+    function editFile(id, filename, description, fileType) {
+      currentEditFileId = id;
+      document.getElementById('editFilename').value = filename;
+      document.getElementById('editDescription').value = description || '';
+      document.getElementById('editFileType').value = fileType;
+      document.getElementById('editModal').classList.add('show');
+    }
+    
+    // 关闭编辑弹框
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('show');
+      currentEditFileId = null;
+    }
+    
+    // 保存文件修改
+    async function saveFileEdit() {
+      if (!currentEditFileId) return;
+      
+      const filename = document.getElementById('editFilename').value.trim();
+      const description = document.getElementById('editDescription').value.trim();
+      const fileType = document.getElementById('editFileType').value;
+      
+      if (!filename) {
+        showModal('error', '错误', '文件名不能为空');
+        return;
+      }
+      
+      try {
+        const username = localStorage.getItem('username');
+        const resp = await fetch(`/api/files/${currentEditFileId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Username': username
+          },
+          body: JSON.stringify({ filename, description, file_type: fileType })
+        });
+        
+        const data = await resp.json();
+        if (data.success) {
+          showModal('success', '修改成功', '文件信息已更新');
+          closeEditModal();
+          loadFileList(true); // 强制刷新
+        } else {
+          showModal('error', '修改失败', data.message);
+        }
+      } catch (err) {
+        showModal('error', '修改失败', '网络错误');
+      }
+    }
+    
     // 删除文件
     async function deleteFile(id) {
-      if (!confirm('确定要删除该文件吗？')) return;
+      if (!confirm('确定要删除该文件吗？此操作将同时删除S3上的文件。')) return;
       
       try {
         const username = localStorage.getItem('username');
@@ -1218,7 +1507,7 @@
         const data = await resp.json();
         if (data.success) {
           showModal('success', '删除成功', '文件已删除');
-          loadFileList();
+          loadFileList(true); // 强制刷新
         } else {
           showModal('error', '删除失败', data.message);
         }
@@ -1268,6 +1557,8 @@
       document.getElementById('searchDept').value = '';
       document.getElementById('searchStartDate').value = '';
       document.getElementById('searchEndDate').value = '';
+      currentPage = 1;
+      loadFileList(true); // 强制刷新
     }
   </script>
 </body>

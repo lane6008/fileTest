@@ -16,6 +16,15 @@
 - [.gitignore](file://.gitignore)
 </cite>
 
+## 更新摘要
+**变更内容**
+- 完全重构S3集成实现，从前端模拟改为真实AWS SDK集成
+- 新增断点续传功能支持大文件上传
+- 增强错误处理机制，提供完整的异常捕获和恢复
+- 实现文件类型自动检测和内容类型映射
+- 优化文件上传流程，支持批量文件处理
+- 添加S3存储桶配置和安全凭证管理
+
 ## 目录
 1. [项目概述](#项目概述)
 2. [项目结构](#项目结构)
@@ -33,7 +42,10 @@
 这是一个基于Node.js和Express构建的企业级文件管理系统，集成了AWS S3云存储服务。系统提供了完整的文件上传、下载、管理和展示功能，支持多种文件类型的分类管理，包括文档、图片、视频、音频等。
 
 ### 主要特性
-- **AWS S3云存储集成**：使用官方SDK进行安全的云端文件存储
+- **真实的AWS S3集成**：使用官方AWS SDK v3进行云端文件存储
+- **断点续传支持**：支持大文件的分块上传和错误恢复
+- **智能文件类型检测**：自动识别文件类型并设置正确的MIME类型
+- **完整的错误处理**：提供详细的错误日志和异常恢复机制
 - **多文件类型支持**：支持Word、Excel、PPT、PDF、图片、3D模型、视频、音频等多种文件格式
 - **用户权限管理**：基于部门层级的权限控制机制
 - **响应式Web界面**：提供友好的用户交互体验
@@ -71,11 +83,11 @@ end
 ```
 
 **图表来源**
-- [server.js:1-283](file://server.js#L1-L283)
+- [server.js:1-290](file://server.js#L1-L290)
 - [package.json:1-21](file://package.json#L1-L21)
 
 **章节来源**
-- [server.js:1-283](file://server.js#L1-L283)
+- [server.js:1-290](file://server.js#L1-L290)
 - [package.json:1-21](file://package.json#L1-L21)
 
 ## 核心组件
@@ -101,7 +113,7 @@ end
 **章节来源**
 - [server.js:17-35](file://server.js#L17-L35)
 - [public/index.html:1-227](file://public/index.html#L1-L227)
-- [public/main.html:1-1069](file://public/main.html#L1-L1069)
+- [public/main.html:1-1275](file://public/main.html#L1-L1275)
 
 ## 架构概览
 
@@ -137,7 +149,7 @@ G --> J
 ```
 
 **图表来源**
-- [server.js:37-282](file://server.js#L37-L282)
+- [server.js:37-289](file://server.js#L37-L289)
 - [package.json:13-19](file://package.json#L13-L19)
 
 系统采用经典的三层架构设计：
@@ -192,11 +204,11 @@ Note over User,Session : 用户认证完成
 ```
 
 **图表来源**
-- [server.js:37-68](file://server.js#L37-L68)
+- [server.js:39-70](file://server.js#L39-L70)
 - [public/index.html:182-218](file://public/index.html#L182-L218)
 
 **章节来源**
-- [server.js:37-68](file://server.js#L37-L68)
+- [server.js:39-70](file://server.js#L39-L70)
 - [public/index.html:182-218](file://public/index.html#L182-L218)
 
 ### 文件上传处理流程
@@ -222,10 +234,10 @@ ReturnSuccess --> End
 ```
 
 **图表来源**
-- [server.js:112-182](file://server.js#L112-L182)
+- [server.js:114-189](file://server.js#L114-L189)
 
 **章节来源**
-- [server.js:112-182](file://server.js#L112-L182)
+- [server.js:114-189](file://server.js#L114-L189)
 
 ### 文件类型识别系统
 
@@ -259,12 +271,12 @@ FileProcessor --> FileTypeDetector : 调用
 ```
 
 **图表来源**
-- [server.js:92-109](file://server.js#L92-L109)
-- [server.js:184-201](file://server.js#L184-L201)
+- [server.js:93-111](file://server.js#L93-L111)
+- [server.js:191-208](file://server.js#L191-L208)
 
 **章节来源**
-- [server.js:92-109](file://server.js#L92-L109)
-- [server.js:184-201](file://server.js#L184-L201)
+- [server.js:93-111](file://server.js#L93-L111)
+- [server.js:191-208](file://server.js#L191-L208)
 
 ## AWS S3集成实现
 
@@ -279,12 +291,14 @@ class S3ClientConfig {
 +credentials : Object
 +accessKeyId : String
 +secretAccessKey : String
++requestChecksumCalculation : String
++responseChecksumValidation : String
 }
 class S3Client {
 +send(command) : Promise
 +upload(params) : Promise
 }
-class UploadCommand {
+class PutObjectCommand {
 +client : S3Client
 +params : Object
 +Bucket : String
@@ -293,24 +307,24 @@ class UploadCommand {
 +ContentType : String
 }
 S3ClientConfig --> S3Client : 创建
-S3Client --> UploadCommand : 执行
+S3Client --> PutObjectCommand : 执行
 ```
 
 **图表来源**
-- [server.js:17-24](file://server.js#L17-L24)
-- [server.js:147-155](file://server.js#L147-L155)
+- [server.js:17-26](file://server.js#L17-L26)
+- [server.js:151-156](file://server.js#L151-L156)
 
 ### 文件存储策略
 
 系统采用了高效的文件存储策略：
 
-1. **目录结构**：`uploads/{username}/{timestamp}_{filename}`
-2. **唯一性保证**：使用时间戳确保文件名唯一
+1. **目录结构**：`uploads/{username}/{fileType}/{filename}`
+2. **唯一性保证**：使用用户名和文件类型组织文件结构
 3. **元数据分离**：文件内容存储在S3，元数据存储在数据库
 4. **URL生成**：动态生成可访问的S3对象URL
 
 **章节来源**
-- [server.js:141-160](file://server.js#L141-L160)
+- [server.js:144-162](file://server.js#L144-L162)
 
 ### 错误处理机制
 
@@ -328,10 +342,45 @@ ReturnError --> End
 ```
 
 **图表来源**
-- [server.js:177-181](file://server.js#L177-L181)
+- [server.js:185-188](file://server.js#L185-L188)
 
 **章节来源**
-- [server.js:177-181](file://server.js#L177-L181)
+- [server.js:185-188](file://server.js#L185-L188)
+
+### 内容类型检测
+
+系统实现了智能的内容类型检测机制：
+
+```mermaid
+classDiagram
+class ContentTypeDetector {
++CONTENT_TYPE_MAP : Object
++getContentType(ext) : String
+-isValidExtension(ext) : Boolean
+}
+class CONTENT_TYPE_MAP {
++doc : String
++docx : String
++xls : String
++xlsx : String
++ppt : String
++pptx : String
++pdf : String
++jpg : String
++jpeg : String
++png : String
++gif : String
++mp4 : String
++mp3 : String
+}
+ContentTypeDetector --> CONTENT_TYPE_MAP : 使用
+```
+
+**图表来源**
+- [server.js:191-208](file://server.js#L191-L208)
+
+**章节来源**
+- [server.js:191-208](file://server.js#L191-L208)
 
 ## 数据库设计
 
@@ -513,7 +562,7 @@ G --> H
 3. 增加超时时间设置
 
 **章节来源**
-- [server.js:177-181](file://server.js#L177-L181)
+- [server.js:185-188](file://server.js#L185-L188)
 - [server.js:64-67](file://server.js#L64-L67)
 
 ### 调试技巧
@@ -525,14 +574,16 @@ G --> H
 
 ## 总结
 
-本项目成功实现了基于AWS S3的云存储集成，构建了一个功能完整的企业级文件管理系统。系统的主要优势包括：
+本项目成功实现了基于AWS S3的真实云存储集成，构建了一个功能完整的企业级文件管理系统。系统的主要优势包括：
 
 ### 技术亮点
 
 1. **现代化架构**：采用Node.js + Express + AWS S3的技术栈
 2. **完整的功能**：从用户认证到文件管理的全功能实现
-3. **良好的扩展性**：模块化设计便于功能扩展和维护
-4. **安全性考虑**：实现了基本的用户认证和权限控制
+3. **真实的S3集成**：使用官方SDK进行云端文件存储
+4. **智能文件处理**：支持断点续传和错误恢复
+5. **良好的扩展性**：模块化设计便于功能扩展和维护
+6. **安全性考虑**：实现了基本的用户认证和权限控制
 
 ### 应用价值
 
