@@ -321,10 +321,113 @@
       overflow: hidden;
     }
     
+    /* 列表头部行 - 标题和搜索框 */
+    .list-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .list-header-row .section-title {
+      margin-bottom: 0;
+      flex-shrink: 0;
+    }
+    
+    /* 搜索框区域 */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f0f2f5;
+      border-radius: 8px;
+      flex: 1;
+      justify-content: flex-end;
+      max-width: 900px;
+    }
+    
+    .search-icon {
+      width: 36px;
+      height: 36px;
+      background: #e8ecf1;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    
+    .reset-btn {
+      padding: 8px 16px;
+      background: #8bb4dd;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    
+    .reset-btn:hover {
+      background: #6a9bc7;
+    }
+    
+    .search-input {
+      flex: 2;
+      min-width: 160px;
+      padding: 8px 10px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+    }
+    
+    .search-input:focus {
+      border-color: #2d6a9f;
+    }
+    
+    .search-input-small {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 10px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+    }
+    
+    .search-input-small:focus {
+      border-color: #2d6a9f;
+    }
+    
+    .search-input-date {
+      width: 120px;
+      padding: 8px 10px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+    }
+    
+    .search-input-date:focus {
+      border-color: #2d6a9f;
+    }
+    
+    .search-divider {
+      color: #999;
+      font-size: 14px;
+      padding: 0 4px;
+    }
+    
     /* 类型标签 - 设计图样式 */
     .type-tabs {
       display: flex;
-      margin-top: 12px;
+      margin-top: 0;
       margin-bottom: 16px;
       border: 1px solid #d0d7de;
       border-bottom: none;
@@ -671,7 +774,22 @@
     
     <!-- 文件列表区域 -->
     <div class="list-section">
-      <div class="section-title">文件列表</div>
+      <!-- 标题和搜索框同行 -->
+      <div class="list-header-row">
+        <div class="section-title">文件列表</div>
+        
+        <!-- 搜索框区域 -->
+        <div class="search-bar">
+          <div class="search-icon">🔍</div>
+          <input type="text" class="search-input" id="searchKeyword" placeholder="文件名、描述......模糊搜索">
+          <input type="text" class="search-input-small" id="searchUploader" placeholder="上传人">
+          <input type="text" class="search-input-small" id="searchDept" placeholder="部门">
+          <input type="date" class="search-input-date" id="searchStartDate" placeholder="起始时间">
+          <span class="search-divider">—</span>
+          <input type="date" class="search-input-date" id="searchEndDate" placeholder="结束时间">
+          <button class="reset-btn" onclick="resetSearch()">重置</button>
+        </div>
+      </div>
       
       <!-- 类型标签 -->
       <div class="type-tabs" id="typeTabs">
@@ -1141,6 +1259,15 @@
         hour: '2-digit',
         minute: '2-digit'
       });
+    }
+    
+    // 重置搜索
+    function resetSearch() {
+      document.getElementById('searchKeyword').value = '';
+      document.getElementById('searchUploader').value = '';
+      document.getElementById('searchDept').value = '';
+      document.getElementById('searchStartDate').value = '';
+      document.getElementById('searchEndDate').value = '';
     }
   </script>
 </body>
