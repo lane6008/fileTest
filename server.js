@@ -21,6 +21,8 @@ const s3Client = new S3Client({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  responseChecksumValidation: 'WHEN_REQUIRED',
 });
 
 // 创建数据库连接池
@@ -122,15 +124,16 @@ app.post('/api/upload', async (req, res) => {
   }
 
   try {
-    // 获取用户信息
+    // 获取用户信息（包括id和username）
     const [userRows] = await pool.query(
-      'SELECT id, dept_id FROM person WHERE username = ? AND status = 1',
+      'SELECT id, username, dept_id FROM person WHERE username = ? AND status = 1',
       [username]
     );
     if (userRows.length === 0) {
       return res.status(401).json({ success: false, message: '用户不存在' });
     }
     const uploaderId = userRows[0].id;
+    const loginUsername = userRows[0].username;
     const deptId = userRows[0].dept_id;
 
     const uploadedFiles = [];
@@ -138,39 +141,43 @@ app.post('/api/upload', async (req, res) => {
     for (const file of files) {
       const { filename, originalName, fileType, fileExt, description, fileSize, fileData } = file;
       
-      // 生成 S3 key
-      const timestamp = Date.now();
-      const s3Key = `uploads/${username}/${timestamp}_${filename}`;
+      // 生成 S3 key: 登录用户名/文件类型/上传文件名
+      const s3Key = `${loginUsername}/${fileType}/${filename}`;
       
       // 上传文件到 S3
       const buffer = Buffer.from(fileData, 'base64');
-      const upload = new Upload({
-        client: s3Client,
-        params: {
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: s3Key,
-          Body: buffer,
-          ContentType: getContentType(fileExt),
-        },
+      console.log(`开始上传文件到S3: ${s3Key}, 大小: ${buffer.length} bytes`);
+      
+      const putCommand = new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: s3Key,
+        Body: buffer,
+        ContentType: getContentType(fileExt),
       });
       
-      await upload.done();
+      const s3Result = await s3Client.send(putCommand);
+      console.log('S3上传成功:', s3Result.ETag);
       
       // 构建 S3 URL
-      const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+      const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${encodeURIComponent(loginUsername)}/${encodeURIComponent(fileType)}/${encodeURIComponent(filename)}`;
+      
+      // 获取当前时间作为上传时间
+      const uploadTime = new Date();
       
       // 保存到数据库
       const [result] = await pool.query(
-        `INSERT INTO files (filename, original_name, file_type, file_ext, description, file_size, s3_key, s3_url, uploader_id, dept_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [filename, originalName, fileType, fileExt, description || '', fileSize, s3Key, s3Url, uploaderId, deptId]
+        `INSERT INTO files (filename, original_name, file_type, file_ext, description, file_size, s3_key, s3_url, uploader_id, dept_id, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [filename, originalName, fileType, fileExt, description || '', fileSize, s3Key, s3Url, uploaderId, deptId, uploadTime]
       );
       
       uploadedFiles.push({
         id: result.insertId,
         filename,
         fileType,
-        s3Url
+        s3Url,
+        uploadTime: uploadTime,
+        size: fileSize
       });
     }
     

@@ -914,7 +914,7 @@
       renderUploadList();
     }
     
-    // 提交上传 - 前端模拟
+    // 提交上传 - 调用后端API上传到S3
     async function submitUpload() {
       if (uploadFiles.length === 0) {
         showModal('error', '错误', '请先选择要上传的文件');
@@ -933,16 +933,36 @@
       btn.disabled = true;
       btn.innerHTML = '<div class="loading"></div><span>上传中...</span>';
       
-      showModal('loading', '上传中', '正在上传文件，请稍候...', false);
+      showModal('loading', '上传中', '正在上传文件到S3，请稍候...', false);
       
-      // 模拟上传延迟
-      setTimeout(() => {
-        showModal('success', '上传成功', `成功上传 ${uploadFiles.length} 个文件`);
-        uploadFiles = [];
-        renderUploadList();
+      try {
+        const username = localStorage.getItem('username');
+        const resp = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Username': username
+          },
+          body: JSON.stringify({ files: uploadFiles })
+        });
+        
+        const data = await resp.json();
+        
+        if (data.success) {
+          showModal('success', '上传成功', `成功上传 ${data.files.length} 个文件到S3`);
+          uploadFiles = [];
+          renderUploadList();
+          loadFileList(); // 刷新文件列表
+        } else {
+          showModal('error', '上传失败', data.message || '上传失败');
+        }
+      } catch (err) {
+        console.error('上传错误:', err);
+        showModal('error', '上传失败', '网络错误或服务器异常');
+      } finally {
         btn.disabled = false;
         btn.innerHTML = '<span>提交上传</span>';
-      }, 1500);
+      }
     }
     
     // 设置类型标签
