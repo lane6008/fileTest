@@ -73,14 +73,21 @@
       padding: 20px;
     }
     
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
     .section-title {
       font-size: 16px;
       font-weight: 600;
       color: #1a3a5c;
-      margin-bottom: 16px;
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-bottom: 0;
     }
     
     .section-title::before {
@@ -96,6 +103,16 @@
       display: flex;
       gap: 16px;
       min-height: 200px;
+      width: 100%;
+    }
+    
+    /* 文件列表容器撑满 */
+    .file-list-container {
+      flex: 1;
+      border: 1px solid #e1e4e8;
+      border-radius: 8px;
+      overflow: hidden;
+      width: calc(100% - 196px);
     }
     
     /* 左侧拖拽区 */
@@ -135,13 +152,7 @@
       display: none;
     }
     
-    /* 右侧文件列表 */
-    .file-list-container {
-      flex: 1;
-      border: 1px solid #e1e4e8;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    /* 右侧文件列表 - 已在上面的样式中定义 */
     
     .file-list-header {
       display: flex;
@@ -174,11 +185,16 @@
       background: #f6f8fa;
     }
     
-    /* 列宽固定 */
-    .col-filename { width: 200px; min-width: 200px; }
-    .col-type { width: 100px; min-width: 100px; }
-    .col-desc { flex: 1; min-width: 200px; }
-    .col-action { width: 80px; min-width: 80px; text-align: center; }
+    /* 列宽固定 - 上传区域（百分比相对值） */
+    .file-list-header, .file-item {
+      display: flex;
+      width: 100%;
+      gap: 2%;
+    }
+    .col-filename { width: 25%; }
+    .col-type { width: 15%; }
+    .col-desc { width: 48%; }
+    .col-action { width: 10%; text-align: center; }
     
     .file-item input, .file-item select, .file-item textarea {
       width: 100%;
@@ -217,10 +233,43 @@
       background: #ff7875;
     }
     
-    /* 提交按钮 */
+    /* 提交按钮 - 放在标题右侧 */
+    .submit-btn-inline {
+      background: linear-gradient(135deg, #1a3a5c, #2d6a9f);
+      color: #fff;
+      border: none;
+      padding: 8px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+    
+    .submit-btn-inline:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+    
+    .submit-btn-inline:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .submit-btn-inline .loading {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    /* 旧的提交区域样式保留但不使用 */
     .submit-area {
-      margin-top: 16px;
-      text-align: right;
+      display: none;
     }
     
     .submit-btn {
@@ -272,33 +321,46 @@
       overflow: hidden;
     }
     
-    /* 类型标签 */
+    /* 类型标签 - 设计图样式 */
     .type-tabs {
       display: flex;
-      gap: 8px;
+      margin-top: 12px;
       margin-bottom: 16px;
-      flex-wrap: wrap;
+      border: 1px solid #d0d7de;
+      border-bottom: none;
+      background: #f6f8fa;
+      border-radius: 8px 8px 0 0;
+      padding: 0;
     }
     
     .type-tab {
-      padding: 8px 20px;
-      border: 1px solid #d0d7de;
-      border-radius: 20px;
-      background: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-right: 1px solid #d0d7de;
+      border-bottom: 2px solid transparent;
+      background: transparent;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
+      color: #666;
       transition: all 0.2s;
+      position: relative;
+      margin-bottom: -1px;
+    }
+    
+    .type-tab:last-child {
+      border-right: none;
     }
     
     .type-tab:hover {
-      border-color: #2d6a9f;
       color: #2d6a9f;
+      background: rgba(45,106,159,0.05);
     }
     
     .type-tab.active {
-      background: #2d6a9f;
-      color: #fff;
-      border-color: #2d6a9f;
+      color: #2d6a9f;
+      border-bottom-color: #2d6a9f;
+      background: #fff;
+      font-weight: 600;
     }
     
     /* 文件表格 */
@@ -317,16 +379,18 @@
     
     .file-table th {
       background: #f6f8fa;
-      padding: 12px;
+      padding: 12px 8px;
       text-align: left;
       font-weight: 600;
       color: #444;
       border-bottom: 1px solid #e1e4e8;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
     .file-table td {
-      padding: 12px;
+      padding: 12px 8px;
       border-bottom: 1px solid #f0f0f0;
       white-space: nowrap;
       overflow: hidden;
@@ -337,17 +401,18 @@
       background: #f6f8fa;
     }
     
-    /* 表格列宽 */
-    .file-table .col-id { width: 60px; }
-    .file-table .col-name { width: 200px; max-width: 200px; }
-    .file-table .col-type2 { width: 80px; }
-    .file-table .col-desc2 { width: 250px; max-width: 250px; }
-    .file-table .col-uploader { width: 100px; }
-    .file-table .col-dept { width: 120px; }
-    .file-table .col-size { width: 90px; }
-    .file-table .col-time { width: 150px; }
-    .file-table .col-thumb { width: 80px; }
-    .file-table .col-op { width: 120px; }
+    /* 表格列宽 - 百分比相对值 */
+    .file-table { table-layout: fixed; width: 100%; }
+    .file-table .col-id { width: 6%; }
+    .file-table .col-name { width: 18%; }
+    .file-table .col-type2 { width: 7%; }
+    .file-table .col-desc2 { width: 20%; }
+    .file-table .col-uploader { width: 9%; }
+    .file-table .col-dept { width: 10%; }
+    .file-table .col-size { width: 9%; }
+    .file-table .col-time { width: 11%; }
+    .file-table .col-thumb { width: 8%; }
+    .file-table .col-op { width: 12%; }
     
     .file-table .col-desc2 {
       white-space: normal;
@@ -379,24 +444,40 @@
     .action-btns {
       display: flex;
       gap: 6px;
+      flex-wrap: nowrap;
     }
     
     .action-btn {
-      padding: 4px 10px;
+      padding: 4px 8px;
       border: none;
       border-radius: 4px;
       font-size: 12px;
       cursor: pointer;
+      white-space: nowrap;
     }
     
-    .action-btn.view {
-      background: #2d6a9f;
+    .action-btn.copy {
+      background: #8bb4dd;
+      color: #fff;
+    }
+    
+    .action-btn.download {
+      background: #8bb4dd;
+      color: #fff;
+    }
+    
+    .action-btn.edit {
+      background: #8bb4dd;
       color: #fff;
     }
     
     .action-btn.delete {
-      background: #ff4d4f;
+      background: #8bb4dd;
       color: #fff;
+    }
+    
+    .action-btn:hover {
+      opacity: 0.85;
     }
     
     /* 分页 */
@@ -549,7 +630,12 @@
   <div class="main-container">
     <!-- 上传区域 -->
     <div class="upload-section">
-      <div class="section-title">文件上传</div>
+      <div class="section-header">
+        <div class="section-title">文件上传</div>
+        <button class="submit-btn-inline" id="submitBtn" onclick="submitUpload()">
+          <span>提交上传</span>
+        </button>
+      </div>
       
       <div class="upload-area">
         <!-- 左侧拖拽区 -->
@@ -576,8 +662,8 @@
         </div>
       </div>
       
-      <div class="submit-area">
-        <button class="submit-btn" id="submitBtn" onclick="submitUpload()">
+      <div class="submit-area" style="display:none;">
+        <button class="submit-btn" id="submitBtnOld">
           <span>提交上传</span>
         </button>
       </div>
@@ -828,7 +914,7 @@
       renderUploadList();
     }
     
-    // 提交上传
+    // 提交上传 - 前端模拟
     async function submitUpload() {
       if (uploadFiles.length === 0) {
         showModal('error', '错误', '请先选择要上传的文件');
@@ -849,43 +935,14 @@
       
       showModal('loading', '上传中', '正在上传文件，请稍候...', false);
       
-      try {
-        const username = localStorage.getItem('username');
-        const resp = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Username': username
-          },
-          body: JSON.stringify({
-            files: uploadFiles.map(f => ({
-              filename: f.filename,
-              originalName: f.originalName,
-              fileType: f.fileType,
-              fileExt: f.fileExt,
-              description: f.description,
-              fileSize: f.fileSize,
-              fileData: f.fileData
-            }))
-          })
-        });
-        
-        const data = await resp.json();
-        
-        if (data.success) {
-          showModal('success', '上传成功', `成功上传 ${data.files.length} 个文件`);
-          uploadFiles = [];
-          renderUploadList();
-          loadFileList();
-        } else {
-          showModal('error', '上传失败', data.message);
-        }
-      } catch (err) {
-        showModal('error', '上传失败', '网络错误，请稍后重试');
-      } finally {
+      // 模拟上传延迟
+      setTimeout(() => {
+        showModal('success', '上传成功', `成功上传 ${uploadFiles.length} 个文件`);
+        uploadFiles = [];
+        renderUploadList();
         btn.disabled = false;
         btn.innerHTML = '<span>提交上传</span>';
-      }
+      }, 1500);
     }
     
     // 设置类型标签
@@ -955,8 +1012,10 @@
           </td>
           <td class="col-op">
             <div class="action-btns">
-              <button class="action-btn view" onclick="viewFile('${file.s3_url}')">查看</button>
-              <button class="action-btn delete" onclick="deleteFile(${file.id})">删除</button>
+              <button class="action-btn copy">复制URL</button>
+              <button class="action-btn download">下载</button>
+              <button class="action-btn edit">修改</button>
+              <button class="action-btn delete">删除</button>
             </div>
           </td>
         </tr>
